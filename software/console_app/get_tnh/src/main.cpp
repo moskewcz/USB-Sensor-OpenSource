@@ -55,10 +55,13 @@ int Go (void);
 static int gArgCnt;
 static char **gArgList;
 static const char *gDevice = NULL;
+static const char *gName = NULL;
 static int gVerbose = 0;
 static CSerial gSerial;
+static bool gSetName = false;
 static bool gReadTemperature = true;
 static bool gReadHumidity = false;
+static bool gReadName = false;
 
 //==========================================================================
 // Main Entry
@@ -119,8 +122,10 @@ static void ShowHelp (void)
                  "  --help                          Show this help.\n"
                  "  -v, --verbose                   Verbose mode.\n"
                  "  -d DEVICE, --device=DEVICE      Set device / port.\n"
+                 "  -N NAME, --setname=NAME         Set device name.\n"
                  "  -t, --temperature               Read Temperature (default)\n"
                  "  -h, --humidity                  Read Humidity\n"
+                 "  -g, --getname                   Get device name.\n"
                  "  -a, --all                       Read both Temperature and Humidity\n"
                  );
     printf ("\n");
@@ -135,6 +140,8 @@ static struct option KLongOptions[] =
     { "help", no_argument, NULL, '?'},
     { "verbose", no_argument, NULL, 'v'},
     { "device", required_argument, NULL, 'd'},
+    { "setname", required_argument, NULL, 'N'},
+    { "getname", required_argument, NULL, 'g'},
     { NULL, 0, NULL, 0}
 };
 
@@ -144,7 +151,7 @@ static int ExtractParam (void)
 
     while (1)
     {
-        i = getopt_long (gArgCnt, gArgList, "vd:tha", KLongOptions, NULL);
+        i = getopt_long (gArgCnt, gArgList, "vd:N:thag", KLongOptions, NULL);
         if (i == EOF)
             break;
         switch (i)
@@ -164,8 +171,17 @@ static int ExtractParam (void)
                 gReadHumidity       = true;
                 break;
 
+            case 'g':
+                gReadName           = true;
+                break;
+
             case 'd':
                 gDevice = optarg;
+               break;
+
+            case 'N':
+                gSetName            = true;
+                gName = optarg;
                break;
 
             case 'v':
