@@ -16,6 +16,7 @@
 #include <stdlib.h>
 #include <getopt.h>
 #include <fcntl.h>
+#include <assert.h>
 
 #if (SYSTEM_MSW)
 #include <windows.h>
@@ -323,6 +324,134 @@ static int GetHumidity (void)
 
     return 0;
 }
+
+//==========================================================================
+// Set Name
+//==========================================================================
+static int SetName (void)
+{
+    unsigned char rx_buf[128];
+    int rx_len;
+
+    gSerial.Write ((const unsigned char *)"\n", 1);
+    gSerial.Flush ();
+
+    assert (gName);
+    assert (strlen(gName) <= 8);
+    char tx_buf[128];
+    int ret = snprintf (tx_buf, 128, "N=%s\n", gName);
+    assert (ret < 128);
+
+    if (gSerial.Write ((const unsigned char *)tx_buf, strlen(tx_buf)) < 0) // add + gName
+    {
+        if (gVerbose)
+        {
+            if (gSerial.ErrorMessage != NULL)
+                printf ("ERROR: %s\n", gSerial.ErrorMessage);
+            else
+                printf ("ERROR: Write\n");
+        }
+        else
+            printf ("NaN\n");
+        return -1;
+    }
+
+#if (SYSTEM_MSW)
+        Sleep (1);
+#else
+        usleep (500000);
+#endif
+
+    rx_len = gSerial.Read (rx_buf, sizeof (rx_buf) - 1);
+    if (rx_len < 0)
+    {
+        if (gVerbose)
+        {
+            if (gSerial.ErrorMessage != NULL)
+                printf ("ERROR: %s\n", gSerial.ErrorMessage);
+            else
+                printf ("ERROR: Read\n");
+        }
+        else
+            printf ("NaN\n");
+        return -1;
+    }
+
+    if (rx_len == 0)
+    {
+        if (gVerbose)
+            printf ("ERROR: No response.\n");
+        else
+            printf ("NaN\n");
+        return -1;
+    }
+    rx_buf[rx_len] = 0;
+
+    printf ("%s", rx_buf);
+
+    return 0;
+}
+
+//==========================================================================
+// Get Name
+//==========================================================================
+static int GetName (void)
+{
+    unsigned char rx_buf[128];
+    int rx_len;
+
+    gSerial.Write ((const unsigned char *)"\n", 1);
+    gSerial.Flush ();
+
+    if (gSerial.Write ((const unsigned char *)"GN\n", 3) < 0)
+    {
+        if (gVerbose)
+        {
+            if (gSerial.ErrorMessage != NULL)
+                printf ("ERROR: %s\n", gSerial.ErrorMessage);
+            else
+                printf ("ERROR: Write\n");
+        }
+        else
+            printf ("NaN\n");
+        return -1;
+    }
+
+#if (SYSTEM_MSW)
+        Sleep (1);
+#else
+        usleep (500000);
+#endif
+
+    rx_len = gSerial.Read (rx_buf, sizeof (rx_buf) - 1);
+    if (rx_len < 0)
+    {
+        if (gVerbose)
+        {
+            if (gSerial.ErrorMessage != NULL)
+                printf ("ERROR: %s\n", gSerial.ErrorMessage);
+            else
+                printf ("ERROR: Read\n");
+        }
+        else
+            printf ("NaN\n");
+        return -1;
+    }
+
+    if (rx_len == 0)
+    {
+        if (gVerbose)
+            printf ("ERROR: No response.\n");
+        else
+            printf ("NaN\n");
+        return -1;
+    }
+    rx_buf[rx_len] = 0;
+
+    printf ("%s", rx_buf);
+
+    return 0;
+}
 //==========================================================================
 //==========================================================================
 //==========================================================================
@@ -371,6 +500,13 @@ int Go (void)
         return EXIT_FAILURE;
     }
 
+    // Set Name
+    if (gSetName)
+    {
+        if (SetName () < 0)
+            return EXIT_FAILURE;
+    }
+
     // Read Temperature
     if (gReadTemperature)
     {
@@ -382,6 +518,13 @@ int Go (void)
     if (gReadHumidity)
     {
         if (GetHumidity () < 0)
+            return EXIT_FAILURE;
+    }
+
+    // Read Humidity
+    if (gReadName)
+    {
+        if (GetName () < 0)
             return EXIT_FAILURE;
     }
 
